@@ -14,6 +14,8 @@ class AuthController {
         // 3. Process Result
         if (result.success) {
             return { success: true };
+        } else if (result.mfaRequired) {
+            return { success: false, mfaRequired: true, userId: result.userId };
         } else {
             // Handle Fraud Block specifically
             if (result.risk && result.risk.action === 'BLOCK') {
@@ -31,9 +33,16 @@ class AuthController {
         return result;
     }
 
-    async setupMFA(userId) {
+    async setupMFA() {
         try {
-            const response = await api.post('/auth/mfa/setup', { userId });
+            const token = localStorage.getItem('token');
+            if (!token) {
+                return { success: false, error: 'Not authenticated' };
+            }
+
+            const response = await api.post('/auth/mfa/setup', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             return { success: true, data: response.data };
         } catch (error) {
             console.error("MFA Setup Error Details:", error.response);
@@ -44,9 +53,50 @@ class AuthController {
     async verifyMFA(userId, token) {
         try {
             const response = await api.post('/auth/mfa/verify', { userId, token });
+
+            // If the response contains a token (Login Flow), save it
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+            }
+
+            // Always update user object if returned (Handles Setup & Login flows)
+            if (response.data.user) {
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+            } else if (response.data._id) {
+                // Fallback for login flow if user object isn't nested (based on previous code)
+                // But looking at server code: 
+                // Setup flow returns: { success: true, message: '...', user: {...} }
+                // Login flow returns: { success: true, message: '...', _id: ..., email: ..., token: ... }
+                // We should construct user object for login flow consistency
+                localStorage.setItem('user', JSON.stringify({
+                    _id: response.data._id,
+                    email: response.data.email,
+                    role: response.data.role, // existing code might not have role in login response, but it's safe to try
+                    mfaEnabled: true // We know it's enabled if we just verified it
+                }));
+            }
+
             return { success: true };
         } catch (error) {
             return { success: false, error: 'Invalid Code' };
+        }
+    }
+
+    async disableMFA() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return { success: false, error: 'Not authenticated' };
+
+            const response = await api.post('/auth/mfa/disable', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.user) {
+                localStorage.setItem('user', JSON.stringify(response.data.user));
+            }
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Failed to disable MFA' };
         }
     }
 }

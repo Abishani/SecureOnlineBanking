@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import './toggle.css';
 import LoginView from './views/LoginView';
 import RegisterView from './views/RegisterView';
 import MFASetupView from './views/MFASetupView';
@@ -13,6 +14,19 @@ const Dashboard = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
+    };
+
+    const disableMFA = async () => {
+        if (window.confirm('Are you sure you want to disable 2FA?')) {
+            const importAuthController = require('./controllers/AuthController').default;
+            const result = await importAuthController.disableMFA();
+            if (result.success) {
+                alert('MFA Disabled');
+                window.location.reload();
+            } else {
+                alert(result.error);
+            }
+        }
     };
 
     if (!user) return <Navigate to="/login" />;
@@ -30,14 +44,26 @@ const Dashboard = () => {
             </div>
 
             <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
-                {!user.mfaEnabled && (
-                    <a href="/mfa-setup" style={styles.cardLink}>
-                        <div style={{ ...styles.card, borderColor: 'red' }}>
-                            <h3>⚠️ Enable 2FA</h3>
-                            <p>Secure your account now</p>
+                <div style={styles.card}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h3>Two-Factor Authentication</h3>
+                            <p style={{ margin: '0.5rem 0', color: '#666' }}>
+                                {user.mfaEnabled
+                                    ? 'On - Your account is secure.'
+                                    : 'Off - Enable to protect your account.'}
+                            </p>
                         </div>
-                    </a>
-                )}
+                        <label style={styles.switch}>
+                            <input
+                                type="checkbox"
+                                checked={user.mfaEnabled}
+                                onChange={user.mfaEnabled ? disableMFA : () => window.location.href = '/mfa-setup'}
+                            />
+                            <span style={styles.slider}></span>
+                        </label>
+                    </div>
+                </div>
 
                 <a href="/transactions" style={styles.cardLink}>
                     <div style={{ ...styles.card, borderColor: '#007bff' }}>
@@ -54,8 +80,25 @@ const Dashboard = () => {
 
 const styles = {
     cardLink: { textDecoration: 'none', color: 'inherit' },
-    card: { padding: '1.5rem', border: '2px solid #ddd', borderRadius: '8px', cursor: 'pointer', backgroundColor: 'white' },
-    logoutBtn: { marginTop: '2rem', padding: '0.5rem 1rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }
+    card: { padding: '1.5rem', border: '1px solid #ddd', borderRadius: '8px', backgroundColor: 'white', marginBottom: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
+    logoutBtn: { marginTop: '2rem', padding: '0.5rem 1rem', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
+    switch: {
+        position: 'relative',
+        display: 'inline-block',
+        width: '60px',
+        height: '34px',
+    },
+    slider: {
+        position: 'absolute',
+        cursor: 'pointer',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: '#ccc',
+        transition: '.4s',
+        borderRadius: '34px',
+    }
 };
 
 function App() {

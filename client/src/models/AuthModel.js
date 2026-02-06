@@ -4,6 +4,10 @@ class AuthModel {
     async login(email, password, extraParams = {}) {
         try {
             const response = await api.post('/auth/login', { email, password, ...extraParams });
+            if (response.data.mfaRequired) {
+                return { success: false, mfaRequired: true, userId: response.data.userId };
+            }
+
             if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
                 localStorage.setItem('user', JSON.stringify(response.data));

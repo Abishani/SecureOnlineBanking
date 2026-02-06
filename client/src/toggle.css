@@ -1,0 +1,66 @@
+/* Material UI Style Switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 26px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The Track */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #9e9e9e;
+  /* Grey 500 */
+  transition: .3s;
+  border-radius: 34px;
+  opacity: 0.8;
+}
+
+/* The Thumb */
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0px 2px 1px -1px rgba(0, 0, 0, 0.2),
+    0px 1px 1px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 3px 0px rgba(0, 0, 0, 0.12);
+}
+
+/* Checked State */
+input:checked+.slider {
+  background-color: #90caf9;
+  /* Blue 200 (Track color when checked) */
+  opacity: 1;
+}
+
+input:checked+.slider:before {
+  transform: translateX(16px);
+  background-color: #1976d2;
+  /* Blue 700 (Thumb color when checked) */
+}
+
+/* Hover effect for thumb (Ripple-like) */
+.switch:hover .slider:before {
+  box-shadow: 0 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.switch:hover input:checked+.slider:before {
+  box-shadow: 0 0 0 5px rgba(25, 118, 210, 0.1);
+}

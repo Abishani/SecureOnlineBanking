@@ -8,17 +8,15 @@ const MFASetupView = () => {
 
     useEffect(() => {
         const setup = async () => {
-            const user = JSON.parse(localStorage.getItem('user'));
-            if (!user) {
-                setMessage("Error: User not logged in (No user in localStorage). Please Logout and Login.");
+            const token = localStorage.getItem('token');
+            if (!token) {
+                setMessage("Error: Please login first");
                 return;
             }
-            // In real app, don't pass ID from client blindly, use token check in backend
-            console.log("Setting up MFA for User ID:", user._id);
-            const result = await AuthController.setupMFA(user._id);
+
+            const result = await AuthController.setupMFA();
             if (result.success) {
                 setQrCode(result.data.qrCode);
-                setSecret(result.data.secret);
                 setSecret(result.data.secret);
             } else {
                 console.error("MFA Setup Failed:", result.error);
@@ -30,7 +28,7 @@ const MFASetupView = () => {
 
     const handleVerify = async (e) => {
         e.preventDefault();
-        const token = e.target.token.value;
+        const token = e.target.token.value.replace(/\s+/g, '');
         const user = JSON.parse(localStorage.getItem('user'));
         const result = await AuthController.verifyMFA(user._id, token);
         if (result.success) {
@@ -68,7 +66,7 @@ const styles = {
     card: { padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '400px', textAlign: 'center' },
     input: { width: '80%', padding: '0.5rem', margin: '1rem 0' },
     button: { width: '100%', padding: '0.75rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-    success: { color: 'red', marginTop: '1rem', fontWeight: 'bold' }
+    success: { color: 'green', marginTop: '1rem', fontWeight: 'bold' }
 };
 
 export default MFASetupView;
