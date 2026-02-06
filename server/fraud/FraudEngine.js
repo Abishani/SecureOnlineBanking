@@ -56,7 +56,7 @@ class FraudEngine {
             details[r5.rule] = r5.desc;
         }
 
-        // Determine Action
+        // Determines the action based on risk score
         const result = {
             action: 'ALLOW',
             riskScore: totalRisk,
@@ -73,12 +73,6 @@ class FraudEngine {
             // Log even low risk items for visibility
             result.action = 'ALLOW';
             await this.logAlert(userId || null, 'LOGIN_WARNING', 'INFO', result, ip);
-        }
-
-        // Log to Console for Real-Time Visibility
-        console.log(`[FRAUD CHECK] User: ${email} | IP: ${ip} | Score: ${totalRisk.toFixed(2)} | Action: ${result.action}`);
-        if (triggeredRules.length > 0) {
-            console.log(`[FRAUD CHECK] Triggered Rules: ${triggeredRules.join(', ')}`);
         }
 
         return result;

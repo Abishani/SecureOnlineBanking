@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const validator = require('validator');
 const { protect } = require('../middleware/auth');
 const Transaction = require('../models/Transaction');
 const User = require('../models/User');
@@ -13,6 +14,19 @@ router.post('/', protect, async (req, res) => {
     const userId = req.user._id;
 
     try {
+        // Input validation
+        if (!amount || !recipient) {
+            return res.status(400).json({ message: 'Amount and recipient are required' });
+        }
+
+        const numAmount = Number(amount);
+        if (isNaN(numAmount) || numAmount <= 0 || numAmount > 1000000) {
+            return res.status(400).json({ message: 'Invalid amount' });
+        }
+
+        if (!validator.isEmail(recipient)) {
+            return res.status(400).json({ message: 'Invalid recipient email' });
+        }
         // 1. Transaction Fraud Rules (DISABLED per request)
         // const velocityCheck = await rules.checkTransactionVelocity(userId);
         // const amountCheck = await rules.checkAmountAnomaly(userId, amount);
