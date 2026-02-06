@@ -39,3 +39,23 @@ We run a script to validate:
 ### Manual Verification
 - **Account Lockout**: Verified by attempting 5 invalid logins.
 - **MFA Flow**: Verified by scanning QR code with Google Authenticator.
+
+## 3. Professional Security Tooling
+
+### A. Burp Suite (Recommended for Fraud Testing)
+Burp Suite is ideal for testing rules without code changes by intercepting traffic.
+**How to use:**
+1.  **Proxy Traffic:** Configure browser to route through Burp.
+2.  **Intercept:** Turn on Interceptor.
+3.  **Trigger Login:** Click Login in the React App.
+4.  **Modify Request:** In Burp, edit the Headers:
+    *   **Rule 6 (Device):** Change `User-Agent` to `AttackerBot/1.0`.
+    *   **Rule 2 (IPs):** Add/Edit `X-Forwarded-For: 50.50.50.50`.
+5.  **Forward:** Send the modified request.
+6.  **Verify:** Check the JSON response for `risk.triggeredRules`.
+
+### B. Snyk & SonarQube (Static Analysis)
+These tools check for **code vulnerabilities**, not logic.
+*   **Snyk:** Run `snyk test` to find insecure dependencies (e.g., old versions of `jsonwebtoken`).
+*   **SonarQube:** Scans for code quality issues (e.g., hardcoded secrets, SQL injection risks).
+*   **Limitations:** They **CANNOT** test if "Rule 4: Unusual Time" is working. They only check if the code structure is safe.

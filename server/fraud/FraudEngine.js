@@ -25,6 +25,13 @@ class FraudEngine {
             details[r2.rule] = r2.desc;
         }
 
+        const r3 = await rules.checkUnusualLocation(userId, context.mockCountry);
+        if (r3) {
+            totalRisk += r3.risk;
+            triggeredRules.push(r3.rule);
+            details[r3.rule] = r3.desc;
+        }
+
         const r4 = await rules.checkUnusualTime();
         if (r4) {
             totalRisk += r4.risk;
@@ -62,10 +69,16 @@ class FraudEngine {
         } else if (totalRisk >= 0.5) {
             result.action = 'FLAG';
             await this.logAlert(userId || null, 'LOGIN_FLAG', 'MEDIUM', result, ip);
-        } else if (totalRisk >= 0.3) {
-            // Just Log, don't flag user yet
-            result.action = 'MONITOR';
-            await this.logAlert(userId || null, 'LOGIN_MONITOR', 'LOW', result, ip);
+        } else if (totalRisk >= 0.1) {
+            // Log even low risk items for visibility
+            result.action = 'ALLOW';
+            await this.logAlert(userId || null, 'LOGIN_WARNING', 'INFO', result, ip);
+        }
+
+        // Log to Console for Real-Time Visibility
+        console.log(`[FRAUD CHECK] User: ${email} | IP: ${ip} | Score: ${totalRisk.toFixed(2)} | Action: ${result.action}`);
+        if (triggeredRules.length > 0) {
+            console.log(`[FRAUD CHECK] Triggered Rules: ${triggeredRules.join(', ')}`);
         }
 
         return result;

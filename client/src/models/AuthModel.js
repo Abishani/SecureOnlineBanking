@@ -1,9 +1,9 @@
 import api from '../services/api';
 
 class AuthModel {
-    async login(email, password) {
+    async login(email, password, extraParams = {}) {
         try {
-            const response = await api.post('/auth/login', { email, password });
+            const response = await api.post('/auth/login', { email, password, ...extraParams });
             if (response.data.token) {
                 localStorage.setItem('token', response.data.token);
                 localStorage.setItem('user', JSON.stringify(response.data));

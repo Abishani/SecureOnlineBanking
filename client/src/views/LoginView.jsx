@@ -7,12 +7,18 @@ const LoginView = () => {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
 
+    // Simulation State
+    const [showSim, setShowSim] = useState(false);
+    const [mockIp, setMockIp] = useState('');
+    const [mockCountry, setMockCountry] = useState('');
+    const [mockUserAgent, setMockUserAgent] = useState('');
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setMessage('');
 
-        const result = await AuthController.handleLogin(email, password);
+        const result = await AuthController.handleLogin(email, password, { mockIp, mockCountry, mockUserAgent });
 
         if (result.success) {
             setMessage('Login Successful! Redirecting...');
@@ -50,7 +56,28 @@ const LoginView = () => {
                         />
                     </div>
                     <button type="submit" style={styles.button}>Login</button>
+
+                    {/* Cyber Attack Simulation Controls */}
+                    <div style={{ marginTop: '1.5rem', borderTop: '1px solid #eee', paddingTop: '1rem' }}>
+                        <div
+                            style={{ cursor: 'pointer', color: '#dc3545', fontWeight: 'bold', marginBottom: '0.5rem' }}
+                            onClick={() => setShowSim(!showSim)}
+                        >
+                            {showSim ? '▼ Hide Cyber Attack Tools' : '▶ Show Cyber Attack Tools'}
+                        </div>
+                        {showSim && (
+                            <div style={{ backgroundColor: '#fff5f5', padding: '0.5rem', borderRadius: '4px' }}>
+                                <small style={{ display: 'block', marginBottom: '0.5rem', color: '#666' }}>Simulate Fraud Signals:</small>
+                                <input placeholder="Spoof IP (e.g. 1.2.3.4)" style={styles.input} onChange={e => setMockIp(e.target.value)} />
+                                <input placeholder="Spoof Country (e.g. CN, RU)" style={styles.input} onChange={e => setMockCountry(e.target.value)} />
+                                <input placeholder="Spoof User-Agent (Target Device)" style={styles.input} onChange={e => setMockUserAgent(e.target.value)} />
+                            </div>
+                        )}
+                    </div>
                 </form>
+                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                    <a href="/register" style={{ color: '#007bff' }}>New User? Register here</a>
+                </div>
             </div>
         </div>
     );

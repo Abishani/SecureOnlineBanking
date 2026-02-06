@@ -2,14 +2,14 @@ import AuthModel from '../models/AuthModel';
 import api from '../services/api';
 
 class AuthController {
-    async handleLogin(email, password) {
+    async handleLogin(email, password, extraParams = {}) {
         // 1. Validate Input
         if (!email || !password) {
             return { success: false, error: 'Please provide email and password' };
         }
 
         // 2. Call Model
-        const result = await AuthModel.login(email, password);
+        const result = await AuthModel.login(email, password, extraParams);
 
         // 3. Process Result
         if (result.success) {
@@ -36,7 +36,8 @@ class AuthController {
             const response = await api.post('/auth/mfa/setup', { userId });
             return { success: true, data: response.data };
         } catch (error) {
-            return { success: false, error: 'MFA Setup Failed' };
+            console.error("MFA Setup Error Details:", error.response);
+            return { success: false, error: error.response?.data?.message || 'MFA Setup Failed' };
         }
     }
 

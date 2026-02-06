@@ -35,9 +35,11 @@ router.post('/register', async (req, res) => {
 
 // @route   POST /api/auth/login
 router.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const { email, password, mockIp, mockCountry, mockUserAgent } = req.body;
+
+    // Allow Mock Overrides for Manual Testing (Demo Mode)
+    const ip = mockIp || req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = mockUserAgent || req.headers['user-agent'];
 
     try {
         const user = await User.findOne({ email });
@@ -53,6 +55,11 @@ router.post('/login', async (req, res) => {
             const fraudResult = await FraudEngine.evaluateLogin({ email, userId: user ? user._id : null, ip: ip, userAgent });
 
             if (fraudResult.action === 'BLOCK') {
+                // BUG FIX: Log the Lockout event so Rule 11 (Repeated Lockouts) can find it later!
+                await LoginAttempt.create({
+                    email, userId: user ? user._id : null, ipAddress: ip, success: false, failReason: 'ACCOUNT_LOCKED'
+                });
+
                 return res.status(403).json({ message: 'Account blocked due to multiple failed logins', risk: fraudResult });
             }
 
@@ -60,7 +67,9 @@ router.post('/login', async (req, res) => {
         }
 
         // 2. Fraud Check (Pre-Login)
-        const fraudResult = await FraudEngine.evaluateLogin({ email, userId: user._id, ip: ip, userAgent });
+        // Pass mockCountry from body if present (for UI testing) or header (for script)
+        const country = mockCountry || req.headers['x-mock-country'];
+        const fraudResult = await FraudEngine.evaluateLogin({ email, userId: user._id, ip: ip, userAgent, mockCountry: country });
 
         // Log Attempt
         await LoginAttempt.create({
@@ -87,18 +96,34 @@ router.post('/login', async (req, res) => {
 
 // @route   POST /api/auth/mfa/setup
 router.post('/mfa/setup', async (req, res) => {
-    const { userId } = req.body; // In real app, get from req.user
+    const { userId } = req.body;
+    console.log("MFA Setup Request Body:", req.body); // DEBUG
     try {
-        const secret = speakeasy.generateSecret({ name: "SecureBankApp" });
+        if (!userId) {
+            console.error("MFA Setup: Missing userId in body");
+            return res.status(400).json({ message: 'Missing User ID' });
+        }
+
         const user = await User.findById(userId);
+        if (!user) {
+            console.error("MFA Setup: User not found for ID", userId);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        const secret = speakeasy.generateSecret({ name: "SecureBankApp" });
         user.mfaSecret = secret.base32;
         await user.save();
 
         QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
+            if (err) {
+                console.error("MFA Setup: QR Code generation error", err);
+                return res.status(500).json({ message: 'QR Generation Error' });
+            }
             res.json({ secret: secret.base32, qrCode: data_url });
         });
     } catch (error) {
-        res.status(500).json({ message: 'Error generating MFA' });
+        console.error("MFA Setup Error:", error);
+        res.status(500).json({ message: 'Error generating MFA: ' + error.message });
     }
 });
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import LoginView from './views/LoginView';
+import RegisterView from './views/RegisterView';
 import MFASetupView from './views/MFASetupView';
 import TransactionView from './views/TransactionView';
 
@@ -23,6 +24,9 @@ const Dashboard = () => {
                 <h3>Security Status</h3>
                 <p><strong>Risk Score (Last Login):</strong> {user.riskAnalysis ? user.riskAnalysis.riskScore : '0'}</p>
                 <p><strong>Status:</strong> {user.riskAnalysis ? user.riskAnalysis.action : 'SAFE'}</p>
+                {user.riskAnalysis && user.riskAnalysis.triggeredRules && (
+                    <p style={{ color: 'orange' }}><strong>Flags:</strong> {user.riskAnalysis.triggeredRules.join(', ')}</p>
+                )}
             </div>
 
             <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
@@ -59,6 +63,7 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/login" element={<LoginView />} />
+                <Route path="/register" element={<RegisterView />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/mfa-setup" element={<MFASetupView />} />
                 <Route path="/transactions" element={<TransactionView />} />

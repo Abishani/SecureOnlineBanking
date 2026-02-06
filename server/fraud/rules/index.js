@@ -36,12 +36,39 @@ async function checkMultipleIPs(userId) {
     return null;
 }
 
+// Rule 3: Unusual Geolocation (Mocked)
+// Trigger: Login from a Country distinct from 'usual' (Mocked via X-Mock-Country header for test)
+async function checkUnusualLocation(userId, mockCountry) {
+    if (!userId) return null;
+    const user = await User.findById(userId);
+
+    // Default to "US" if no mock provided
+    const currentCountry = mockCountry || "US";
+
+    if (!user.usualGeolocations || user.usualGeolocations.length === 0) {
+        user.usualGeolocations = ["US"];
+        await user.save();
+        return null;
+    }
+
+    if (!user.usualGeolocations.includes(currentCountry)) {
+        return {
+            triggered: true,
+            risk: 0.5,
+            rule: 'UNUSUAL_LOCATION',
+            desc: `Login from unusual location: ${currentCountry}`
+        };
+    }
+    return null;
+}
+
 // Rule 4: Unusual Time
 // Trigger: Login between 00:00 and 05:00 (Configurable)
 async function checkUnusualTime() {
     const hour = new Date().getHours();
     // Assuming 'Unusual' is late night for this demo user profile
     if (hour >= 0 && hour < 5) {
+        // if (hour >= 0 && hour < 24){
         return { triggered: true, risk: 0.15, rule: 'UNUSUAL_TIME', desc: 'Login during unusual hours (12AM-5AM)' };
     }
     return null;
@@ -119,6 +146,7 @@ async function checkAmountAnomaly(userId, amount) {
 module.exports = {
     checkMultipleFailedLogins,
     checkMultipleIPs,
+    checkUnusualLocation,
     checkUnusualTime,
     checkDeviceMismatch,
     checkMultipleLockouts,
