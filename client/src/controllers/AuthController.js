@@ -99,6 +99,20 @@ class AuthController {
             return { success: false, error: error.response?.data?.message || 'Failed to disable MFA' };
         }
     }
+    async regenerateRecoveryCodes() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return { success: false, error: 'Not authenticated' };
+
+            const response = await api.post('/auth/mfa/regenerate-codes', {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            return { success: true, codes: response.data.recoveryCodes };
+        } catch (error) {
+            return { success: false, error: error.response?.data?.message || 'Failed to regenerate codes' };
+        }
+    }
 }
 
 export default new AuthController();

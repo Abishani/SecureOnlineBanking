@@ -420,4 +420,40 @@ router.post('/mfa/disable', protect, async (req, res) => {
     }
 });
 
+// @route   POST /api/auth/mfa/regenerate-codes
+router.post('/mfa/regenerate-codes', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.mfaEnabled) {
+            return res.status(400).json({ message: 'MFA is not enabled' });
+        }
+
+        // Generate Recovery Codes (5 codes, 10 chars each)
+        const recoveryCodesPlain = [];
+        const recoveryCodesHashed = [];
+
+        for (let i = 0; i < 5; i++) {
+            const code = crypto.randomBytes(5).toString('hex').toUpperCase(); // 10 chars
+            recoveryCodesPlain.push(code);
+            recoveryCodesHashed.push({ code: hashCode(code), used: false });
+        }
+
+        user.recoveryCodes = recoveryCodesHashed;
+        await user.save();
+
+        res.json({
+            success: true,
+            message: 'Recovery codes regenerated',
+            recoveryCodes: recoveryCodesPlain
+        });
+    } catch (error) {
+        console.error("Regenerate Codes Error:", error);
+        res.status(500).json({ message: 'Failed to regenerate recovery codes' });
+    }
+});
+
 module.exports = router;
