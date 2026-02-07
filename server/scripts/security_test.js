@@ -29,14 +29,14 @@ const runTests = async () => {
     log('\n--- Testing Rule 1: Multiple Failed Logins ---', 'info');
     let failedCount = 0;
     try {
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
             try {
                 await axios.post(`${API_URL}/auth/login`, { email: `testuser_${Date.now()}@example.com`, password: 'wrongpassword' });
             } catch (e) {
                 if (e.response.status === 401) failedCount++;
             }
         }
-        if (failedCount === 4) log('Failed 4 times as expected', 'pass');
+        if (failedCount === 5) log('Failed 5 times as expected', 'pass');
 
         // 5th attempt (Might be same user or strict lockout, but for now we check if logic captured it)
         // Since we used different random emails, the "Same User" lockout won't trigger unless we use Same Email.
