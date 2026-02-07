@@ -40,11 +40,13 @@ const LoginView = () => {
         }
     };
 
+    const [useRecovery, setUseRecovery] = useState(false);
+
     const handleMfaSubmit = async (e) => {
         e.preventDefault();
         const result = await AuthController.verifyMFA(tempUserId, mfaToken.replace(/\s+/g, ''));
         if (result.success) {
-            setMessage('MFA Verified! Redirecting...');
+            setMessage(result.message || 'MFA Verified! Redirecting...');
             setTimeout(() => {
                 window.location.href = '/dashboard';
             }, 1000);
@@ -54,81 +56,92 @@ const LoginView = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h2>Secure Banking Login</h2>
-                {error && <div style={styles.error}>{error}</div>}
-                {message && <div style={styles.success}>{message}</div>}
+        <div className="auth-wrapper">
+            <div className="glass-container animate-fade-in" style={{ width: '400px', textAlign: 'center' }}>
+                <h2 style={{ marginBottom: '1.5rem' }}>Secure Banking Login</h2>
+
+                {error && <div style={{ color: '#ff6b6b', background: 'rgba(255,0,0,0.1)', padding: '10px', borderRadius: '5px', marginBottom: '1rem' }}>{error}</div>}
+                {message && <div style={{ color: '#51cf66', background: 'rgba(0,255,0,0.1)', padding: '10px', borderRadius: '5px', marginBottom: '1rem' }}>{message}</div>}
+
                 <form onSubmit={mfaRequired ? handleMfaSubmit : handleSubmit}>
                     {!mfaRequired ? (
                         <>
-                            <div style={styles.group}>
-                                <label>Email:</label>
-                                <input
-                                    type="email"
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <div style={styles.group}>
-                                <label>Password:</label>
-                                <input
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    style={styles.input}
-                                />
-                            </div>
-                            <button type="submit" style={styles.button}>Login</button>
+                            <input
+                                type="email"
+                                placeholder="Email Address"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="glass-input"
+                                required
+                            />
+                            <input
+                                type="password"
+                                placeholder="Password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="glass-input"
+                                required
+                            />
+                            <button type="submit" className="glass-button">Secure Login</button>
                         </>
                     ) : (
                         <>
-                            <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                                <p><strong>Two-Factor Authentication Required</strong></p>
-                                <p>Please enter the code from your Authenticator App.</p>
+                            <div style={{ marginBottom: '1.5rem' }}>
+                                <p><strong>Two-Factor Authentication</strong></p>
+                                <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+                                    {useRecovery ? 'Enter one of your recovery codes.' : 'Enter the code from your Authenticator App.'}
+                                </p>
                             </div>
-                            <div style={styles.group}>
-                                <label>MFA Code:</label>
-                                <input
-                                    type="text"
-                                    value={mfaToken}
-                                    onChange={(e) => setMfaToken(e.target.value)}
-                                    placeholder="000000"
-                                    style={{ ...styles.input, textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem' }}
-                                    autoFocus
-                                />
-                            </div>
-                            <button type="submit" style={styles.button}>Verify Code</button>
-                            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+
+                            <input
+                                type="text"
+                                value={mfaToken}
+                                onChange={(e) => setMfaToken(e.target.value)}
+                                placeholder={useRecovery ? "Recovery Code (10 chars)" : "000 000"}
+                                className="glass-input"
+                                style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '1.2rem' }}
+                                autoFocus
+                                required
+                            />
+
+                            <button type="submit" className="glass-button">Verify {useRecovery ? 'Recovery Code' : 'Token'}</button>
+
+                            <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <span
-                                    style={{ color: '#007bff', cursor: 'pointer', textDecoration: 'underline' }}
-                                    onClick={() => setMfaRequired(false)}
+                                    style={{ color: '#a5d8ff', cursor: 'pointer', fontSize: '0.9rem' }}
+                                    onClick={() => {
+                                        setUseRecovery(!useRecovery);
+                                        setMfaToken('');
+                                        setError('');
+                                    }}
                                 >
-                                    Back to Login
+                                    {useRecovery ? 'Use Authenticator App' : 'Lost your phone? Use Recovery Code'}
+                                </span>
+
+                                <span
+                                    style={{ color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: '0.8rem' }}
+                                    onClick={() => {
+                                        setMfaRequired(false);
+                                        setUseRecovery(false);
+                                        setMfaToken('');
+                                        setError('');
+                                    }}
+                                >
+                                    Cancel Login
                                 </span>
                             </div>
                         </>
                     )}
-
-
                 </form>
-                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                    <a href="/register" style={{ color: '#007bff' }}>New User? Register here</a>
-                </div>
+
+                {!mfaRequired && (
+                    <div style={{ marginTop: '1.5rem' }}>
+                        <a href="/register" style={{ color: '#a5d8ff', textDecoration: 'none' }}>New User? Register here</a>
+                    </div>
+                )}
             </div>
         </div>
     );
-};
-
-const styles = {
-    container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f0f2f5' },
-    card: { padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '350px' },
-    group: { marginBottom: '1rem' },
-    input: { width: '100%', padding: '0.5rem', marginTop: '0.25rem' },
-    button: { width: '100%', padding: '0.75rem', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-    error: { color: 'red', marginBottom: '1rem', padding: '0.5rem', backgroundColor: '#ffd7d7', borderRadius: '4px' },
-    success: { color: 'green', marginBottom: '1rem' }
 };
 
 export default LoginView;

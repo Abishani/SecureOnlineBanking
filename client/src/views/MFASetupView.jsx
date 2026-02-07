@@ -5,6 +5,7 @@ const MFASetupView = () => {
     const [qrCode, setQrCode] = useState('');
     const [message, setMessage] = useState('');
     const [secret, setSecret] = useState('');
+    const [recoveryCodes, setRecoveryCodes] = useState([]);
 
     useEffect(() => {
         const setup = async () => {
@@ -18,6 +19,7 @@ const MFASetupView = () => {
             if (result.success) {
                 setQrCode(result.data.qrCode);
                 setSecret(result.data.secret);
+                setRecoveryCodes(result.data.recoveryCodes || []);
             } else {
                 console.error("MFA Setup Failed:", result.error);
                 setMessage(result.error || 'Error generating MFA');
@@ -40,33 +42,56 @@ const MFASetupView = () => {
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h2>Setup 2FA</h2>
-                <p>Scan this QR code with your Authenticator App (Google/Microsoft Auth).</p>
+        <div className="auth-wrapper">
+            <div className="glass-container animate-fade-in" style={{ width: '500px', textAlign: 'center' }}>
+                <h2 style={{ marginBottom: '1rem' }}>Setup 2FA</h2>
+                <div style={{ textAlign: 'left', marginBottom: '1rem', fontSize: '0.9rem', color: '#ccc' }}>
+                    1. Scan this QR code with <strong>Google Authenticator</strong> or <strong>Microsoft Authenticator</strong>.
+                </div>
+
                 {qrCode ? (
-                    <div style={{ textAlign: 'center' }}>
-                        <img src={qrCode} alt="2FA QR Code" />
-                        <p style={{ fontSize: '12px' }}>Secret: {secret}</p>
+                    <div style={{ background: 'white', padding: '10px', display: 'inline-block', borderRadius: '8px', marginBottom: '1rem' }}>
+                        <img src={qrCode} alt="2FA QR Code" width="150" />
                     </div>
-                ) : <p>Loading QR...</p>}
+                ) : <p>Loading...</p>}
+
+                {secret && <p style={{ fontSize: '12px', fontFamily: 'monospace', color: '#a5d8ff', marginBottom: '1rem' }}>Secret: {secret}</p>}
+
+                {recoveryCodes.length > 0 && (
+                    <div style={{ textAlign: 'left', background: 'rgba(0,0,0,0.3)', padding: '1rem', borderRadius: '8px', marginBottom: '1rem' }}>
+                        <div style={{ color: '#ffc107', fontWeight: 'bold', marginBottom: '0.5rem' }}>⚠️ SAVE THESE RECOVERY CODES</div>
+                        <p style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>If you lose your device, use these codes to log in. Each code can be used once.</p>
+                        <div className="code-display">
+                            {recoveryCodes.map((code, i) => (
+                                <div key={i}>{code}</div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div style={{ textAlign: 'left', marginBottom: '0.5rem', fontSize: '0.9rem', color: '#ccc' }}>
+                    2. Enter the 6-digit code from the app to verify.
+                </div>
 
                 <form onSubmit={handleVerify}>
-                    <input name="token" placeholder="Enter 6-digit Code" style={styles.input} />
-                    <button type="submit" style={styles.button}>Verify & Enable</button>
+                    <input
+                        name="token"
+                        placeholder="000 000"
+                        className="glass-input"
+                        style={{ textAlign: 'center', letterSpacing: '2px', fontSize: '1.2rem' }}
+                        autoComplete="off"
+                    />
+                    <button type="submit" className="glass-button">Verify & Enable</button>
                 </form>
-                {message && <p style={styles.success}>{message}</p>}
+
+                {message && <div style={{ marginTop: '1rem', color: message.includes('Success') ? '#51cf66' : '#ff6b6b' }}>{message}</div>}
+
+                <div style={{ marginTop: '1rem' }}>
+                    <a href="/dashboard" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem' }}>Cancel</a>
+                </div>
             </div>
         </div>
     );
-};
-
-const styles = {
-    container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f0f2f5' },
-    card: { padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '400px', textAlign: 'center' },
-    input: { width: '80%', padding: '0.5rem', margin: '1rem 0' },
-    button: { width: '100%', padding: '0.75rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-    success: { color: 'green', marginTop: '1rem', fontWeight: 'bold' }
 };
 
 export default MFASetupView;

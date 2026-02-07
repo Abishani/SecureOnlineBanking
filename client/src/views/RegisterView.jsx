@@ -25,74 +25,52 @@ const RegisterView = () => {
 
         const result = await AuthController.handleRegister(email, password);
 
-        if (result.token) {
+        if (result.success) {
             setMessage('Registration Successful! Redirecting...');
             setTimeout(() => {
-                // Auto login (store token) handled by controller? No, controller returns data.
-                // We should probably save it or just redirect to login.
-                // For simplicity, let's redirect to dashboard if token present, or login.
-                // AuthController.handleRegister returns the user object with token usually.
-                localStorage.setItem('token', result.token);
-                localStorage.setItem('user', JSON.stringify(result));
+                // Token and User are already saving in AuthModel.js
                 window.location.href = '/dashboard';
             }, 1000);
-        } else if (result.error) {
-            setError(result.error);
-        } else if (result.message) {
-            setError(result.message);
         } else {
-            // Fallback
-            localStorage.setItem('token', result.token); // If success w/o error
-            localStorage.setItem('user', JSON.stringify(result));
-            window.location.href = '/dashboard';
+            setError(result.error || 'Registration failed');
         }
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h2>Create Account</h2>
-                {error && <div style={styles.error}>{error}</div>}
-                {message && <div style={styles.success}>{message}</div>}
+        <div className="auth-wrapper">
+            <div className="glass-container animate-fade-in" style={{ width: '400px', textAlign: 'center' }}>
+                <h2 style={{ marginBottom: '1.5rem' }}>Create Account</h2>
+
+                {error && <div style={{ color: '#ff6b6b', background: 'rgba(255,0,0,0.1)', padding: '10px', borderRadius: '5px', marginBottom: '1rem' }}>{error}</div>}
+
                 <form onSubmit={handleSubmit}>
-                    <div style={styles.group}>
-                        <label>Email:</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <div style={styles.group}>
-                        <label>Password:</label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            style={styles.input}
-                        />
-                    </div>
-                    <button type="submit" style={styles.button}>Register</button>
+                    <input
+                        type="email"
+                        placeholder="Email Address"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="glass-input"
+                    />
+
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        required
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="glass-input"
+                    />
+
+                    <button type="submit" className="glass-button">Register</button>
                 </form>
-                <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                    <a href="/login" style={{ color: '#007bff' }}>Already have an account? Login</a>
+
+                <div style={{ marginTop: '1.5rem' }}>
+                    <a href="/login" style={{ color: '#a5d8ff', textDecoration: 'none' }}>Already have an account? Login</a>
                 </div>
             </div>
         </div>
     );
-};
-
-const styles = {
-    container: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f0f2f5' },
-    card: { padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '350px' },
-    group: { marginBottom: '1rem' },
-    input: { width: '100%', padding: '0.5rem', marginTop: '0.25rem' },
-    button: { width: '100%', padding: '0.75rem', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' },
-    error: { color: 'red', marginBottom: '1rem' },
-    success: { color: 'green', marginBottom: '1rem' }
 };
 
 export default RegisterView;

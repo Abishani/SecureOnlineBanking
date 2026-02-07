@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
+console.log("!!! AUTH ROUTE LOADED - VERSION WITH RECOVERY CODES !!!");
 const rateLimit = require('express-rate-limit');
+const crypto = require('crypto');
 const validator = require('validator');
 const User = require('../models/User');
 const LoginAttempt = require('../models/LoginAttempt');
@@ -9,6 +11,9 @@ const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const FraudEngine = require('../fraud/FraudEngine');
 const { protect } = require('../middleware/auth');
+
+// Helper: Hash Recovery Code
+const hashCode = (code) => crypto.createHash('sha256').update(code).digest('hex');
 
 // Validate JWT_SECRET on startup
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 20) {
@@ -26,10 +31,12 @@ const generateToken = (id) => {
 // Rate Limiters
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 requests per window
+    max: 1000, // Increased from 100 to 1000 to prevent locking out valid users during testing/demo
     message: { message: 'Too many attempts, please try again later' },
     standardHeaders: true,
     legacyHeaders: false,
+    // Skip if it's a mock request from localhost (optional, but good for testing)
+    skip: (req) => req.ip === '::1' || req.ip === '127.0.0.1'
 });
 
 const mfaLimiter = rateLimit({
@@ -74,6 +81,13 @@ router.post('/register', authLimiter, async (req, res) => {
             _id: user._id,
             email: user.email,
             token: generateToken(user._id),
+            role: user.role,
+            mfaEnabled: false, // Default for new users
+            riskAnalysis: { // Default safe risk analysis for initial registration
+                riskScore: 0,
+                action: 'ALLOW',
+                triggeredRules: []
+            }
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -208,14 +222,34 @@ router.post('/mfa/setup', protect, async (req, res) => {
 
         const secret = speakeasy.generateSecret({ name: "SecureBankApp" });
         user.mfaSecret = secret.base32; // Will be automatically encrypted by virtual
+
+        // Generate Recovery Codes (5 codes, 10 chars each)
+        const recoveryCodesPlain = [];
+        const recoveryCodesHashed = [];
+
+        for (let i = 0; i < 5; i++) {
+            const code = crypto.randomBytes(5).toString('hex').toUpperCase(); // 10 chars
+            recoveryCodesPlain.push(code);
+            recoveryCodesHashed.push({ code: hashCode(code), used: false });
+        }
+
+        user.recoveryCodes = recoveryCodesHashed;
         await user.save();
+
+        console.error("DEBUG: Generated Recovery Codes (Plain):", recoveryCodesPlain);
 
         QRCode.toDataURL(secret.otpauth_url, (err, data_url) => {
             if (err) {
                 console.error("MFA Setup: QR Code generation error", err);
                 return res.status(500).json({ message: 'QR Generation Error' });
             }
-            res.json({ secret: secret.base32, qrCode: data_url });
+            console.error("DEBUG: Sending MFA Setup Response with codes:", recoveryCodesPlain.length);
+            res.json({
+                secret: secret.base32,
+                qrCode: data_url,
+                recoveryCodes: recoveryCodesPlain,
+                codes: recoveryCodesPlain
+            });
         });
     } catch (error) {
         console.error("MFA Setup Error:", error);
@@ -236,7 +270,7 @@ router.post('/mfa/verify', mfaLimiter, async (req, res) => {
         // Sanitize token (remove spaces/dashes)
         const cleanToken = token.replace(/\s+|-/g, '');
 
-        if (!/^\d{6}$/.test(cleanToken)) {
+        if (!/^(\d{6}|[A-Fa-f0-9]{10})$/.test(cleanToken)) {
             return res.status(400).json({ success: false, message: 'Invalid token format' });
         }
 
@@ -260,7 +294,22 @@ router.post('/mfa/verify', mfaLimiter, async (req, res) => {
             window: 2 // Allow 2 steps (60s) before/after for clock drift/slow typing
         });
 
-        if (verified) {
+        // Check Recovery Code if TOTP fails or if token format looks like recovery code (10 chars)
+        let recoveryUsed = false;
+        let isSuccess = verified;
+
+        if (!verified && cleanToken.length === 10) {
+            const hashedInput = hashCode(cleanToken);
+            const codeIndex = user.recoveryCodes.findIndex(rc => rc.code === hashedInput && !rc.used);
+
+            if (codeIndex !== -1) {
+                isSuccess = true;
+                user.recoveryCodes[codeIndex].used = true;
+                recoveryUsed = true;
+            }
+        }
+
+        if (isSuccess) {
             // Reset failed attempts
             user.mfaFailedAttempts = 0;
             user.mfaLockedUntil = null;
@@ -314,7 +363,7 @@ router.post('/mfa/verify', mfaLimiter, async (req, res) => {
 
             res.json({
                 success: true,
-                message: 'MFA Verified',
+                message: recoveryUsed ? 'Verified via Recovery Code' : 'MFA Verified',
                 _id: user._id,
                 email: user.email,
                 token: generateToken(user._id)

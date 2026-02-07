@@ -43,6 +43,11 @@ const userSchema = new mongoose.Schema({
     },
     knownIPs: [String],
     knownDevices: [String], // User-Agent or Fingerprint hashes
+    trustedDevices: [String], // Explicitly trusted devices (by ID/Cookie)
+    recoveryCodes: [{
+        code: String, // Hashed
+        used: { type: Boolean, default: false }
+    }],
     usualGeolocations: [String], // "City, Country"
     averageTransactionAmount: {
         type: Number,
