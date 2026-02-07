@@ -53,7 +53,6 @@ const runTests = async () => {
                     break;
                 }
                 if (i === 4 && e.response.status !== 403) {
-                    // Note: Our implementation logs risk but might need strict block logic verified
                     log('Warning: Account not 403 blocked yet (Risk accumulating)', 'info');
                 }
             }
