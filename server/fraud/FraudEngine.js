@@ -18,7 +18,7 @@ class FraudEngine {
             details[r1.rule] = r1.desc;
         }
 
-        const r2 = await rules.checkMultipleIPs(userId);
+        const r2 = await rules.checkMultipleIPs(userId, ip);
         if (r2) {
             totalRisk += r2.risk;
             triggeredRules.push(r2.rule);

@@ -22,7 +22,7 @@ async function checkMultipleFailedLogins(email) {
 
 // Rule 2: Multiple IPs
 // Trigger: >= 3 distinct IPs in last 1 hour
-async function checkMultipleIPs(userId) {
+async function checkMultipleIPs(userId, currentIp) {
     if (!userId) return null;
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
     const attempts = await LoginAttempt.distinct('ipAddress', {
@@ -30,8 +30,11 @@ async function checkMultipleIPs(userId) {
         timestamp: { $gte: oneHourAgo }
     });
 
-    if (attempts.length >= 3) {
-        return { triggered: true, risk: 0.35, rule: 'MULTIPLE_IPS', desc: `Login attempts from ${attempts.length} distinct IPs` };
+    const distinctIPs = new Set(attempts);
+    if (currentIp) distinctIPs.add(currentIp);
+
+    if (distinctIPs.size >= 3) {
+        return { triggered: true, risk: 0.35, rule: 'MULTIPLE_IPS', desc: `Login attempts from ${distinctIPs.size} distinct IPs` };
     }
     return null;
 }
