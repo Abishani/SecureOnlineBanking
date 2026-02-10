@@ -4,7 +4,7 @@ const loginAttemptSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: false, // May be unknown user
+        required: false,
     },
     email: {
         type: String,

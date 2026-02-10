@@ -63,16 +63,13 @@ class AuthController {
             if (response.data.user) {
                 localStorage.setItem('user', JSON.stringify(response.data.user));
             } else if (response.data._id) {
-                // Fallback for login flow if user object isn't nested (based on previous code)
-                // But looking at server code: 
-                // Setup flow returns: { success: true, message: '...', user: {...} }
-                // Login flow returns: { success: true, message: '...', _id: ..., email: ..., token: ... }
-                // We should construct user object for login flow consistency
+                // Fallback for login flow if user object isn't nested
+               
                 localStorage.setItem('user', JSON.stringify({
                     _id: response.data._id,
                     email: response.data.email,
-                    role: response.data.role, // existing code might not have role in login response, but it's safe to try
-                    mfaEnabled: true // We know it's enabled if we just verified it
+                    role: response.data.role,
+                    mfaEnabled: true
                 }));
             }
 

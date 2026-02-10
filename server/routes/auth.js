@@ -35,7 +35,7 @@ const authLimiter = rateLimit({
     message: { message: 'Too many attempts, please try again later' },
     standardHeaders: true,
     legacyHeaders: false,
-    // Skip if it's a mock request from localhost (optional, but good for testing)
+    // Skip if it's a mock request from localhost (for testing)
     skip: (req) => req.ip === '::1' || req.ip === '127.0.0.1'
 });
 

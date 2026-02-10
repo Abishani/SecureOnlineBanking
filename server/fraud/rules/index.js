@@ -71,7 +71,6 @@ async function checkUnusualTime() {
     const hour = new Date().getHours();
     // Assuming 'Unusual' is late night for this demo user profile
     if (hour >= 0 && hour < 5) {
-        // if (hour >= 0 && hour < 24){
         return { triggered: true, risk: 0.15, rule: 'UNUSUAL_TIME', desc: 'Login during unusual hours (12AM-5AM)' };
     }
     return null;

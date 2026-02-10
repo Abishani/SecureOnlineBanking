@@ -19,8 +19,8 @@ api.interceptors.request.use(async (config) => {
     // 2. Add CSRF Token for state-changing requests
     if (['post', 'put', 'delete', 'patch'].includes(config.method.toLowerCase())) {
         try {
-            // First, get a token if we don't have one (or just fetch fresh)
-            // In a real app, you might cache this or get it from a cookie
+            // First, get a token if there is no tokens (or just fetch fresh)
+            // In a real app, get it from a cookie
             const csrfRes = await axios.get(`${api.defaults.baseURL.replace('/api', '')}/api/csrf-token`, { withCredentials: true });
             config.headers['X-CSRF-Token'] = csrfRes.data.csrfToken;
         } catch (err) {
@@ -36,7 +36,7 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response && error.response.status === 401) {
-            // Only redirect if not already on login page to avoid loops (optional but good practice)
+            // Only redirect if not already on login page to avoid loops
             if (!window.location.pathname.includes('/login')) {
                 console.warn("Session expired or invalid token. Redirecting to login...");
                 localStorage.removeItem('token');

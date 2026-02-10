@@ -6,9 +6,7 @@ const fraudAlertSchema = new mongoose.Schema({
         ref: 'User',
     },
     alertType: {
-        type: String, // e.g., "MULTIPLE_FAILED_LOGINS", "IMPOSSIBLE_TRAVEL"
-        // required: true, // Removed required: true or updated enum to allow dynamic types from FraudEngine
-        // Actually, better to just update the Enum to include the types used in FraudEngine.js
+        type: String, 
         enum: ['MULTIPLE_FAILED_LOGINS', 'IMPOSSIBLE_TRAVEL', 'LOGIN_WARNING', 'LOGIN_FLAG', 'LOGIN_BLOCK', 'MULTIPLE_IPS', 'UNUSUAL_LOCATION', 'UNUSUAL_TIME', 'DEVICE_MISMATCH', 'MULTIPLE_LOCKOUTS'],
         required: true
     },
@@ -17,7 +15,7 @@ const fraudAlertSchema = new mongoose.Schema({
         enum: ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'],
         default: 'MEDIUM'
     },
-    triggeredRules: [String], // List of rule IDs/Names
+    triggeredRules: [String],
     riskScore: Number,
     ipAddress: String,
     geolocation: String,

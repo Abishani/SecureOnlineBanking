@@ -27,16 +27,11 @@ router.post('/', protect, async (req, res) => {
         if (!validator.isEmail(recipient)) {
             return res.status(400).json({ message: 'Invalid recipient email' });
         }
-        // 1. Transaction Fraud Rules (DISABLED per request)
-        // const velocityCheck = await rules.checkTransactionVelocity(userId);
-        // const amountCheck = await rules.checkAmountAnomaly(userId, amount);
+
 
         let fraudRisk = 0;
         const flags = [];
-
-        // if (velocityCheck) { ... }
-        // if (amountCheck) { ... }
-
+ 
         const isBlocked = fraudRisk >= 0.7;
 
         const transaction = await Transaction.create({
@@ -51,11 +46,10 @@ router.post('/', protect, async (req, res) => {
             }
         });
 
-        // Update Average Transaction Amount (Simple logic)
+        // Update Average Transaction Amount
         if (!isBlocked) {
             const user = await User.findById(userId);
             const oldAvg = user.averageTransactionAmount || 0;
-            // Simple moving average could be better, but this suffices for demo
             user.averageTransactionAmount = (oldAvg + Number(amount)) / 2;
             await user.save();
         }
